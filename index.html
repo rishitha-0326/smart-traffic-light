@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Smart Traffic Light System</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f0f4f8;
+    }
+    h1 {
+      color: #333;
+    }
+    .status, .alert {
+      background: #fff;
+      padding: 15px;
+      margin: 20px 0;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .traffic-light {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 10px;
+    }
+    .light {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: gray;
+    }
+    .green { background: green; }
+    .red { background: red; }
+    .alert-text {
+      color: red;
+      font-weight: bold;
+    }
+    .map-box {
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Smart Traffic Light System - Ambulance Simulation</h1>
+
+  <div class="status">
+    <h2>Ambulance Location</h2>
+    <p id="location">Waiting for location...</p>
+  </div>
+
+  <div class="status">
+    <h2>Traffic Light Status</h2>
+    <div class="traffic-light">
+      <div id="redLight" class="light red"></div>
+      <div id="greenLight" class="light"></div>
+    </div>
+  </div>
+
+  <div class="alert">
+    <h2>System Alerts</h2>
+    <p id="alertBox" class="alert-text">No alerts</p>
+  </div>
+
+  <script>
+    // Simulated coordinates
+    let simulatedLat = 12.899;
+    let simulatedLon = 77.599;
+    let nearHospital = false;
+    let failureDetected = false;
+    let lastDetectedTime = Date.now();
+
+    function simulateAmbulanceMovement() {
+      // Random movement simulation
+      simulatedLat += 0.0001;
+      simulatedLon += 0.0001;
+
+      // Check if ambulance is near hospital (demo condition)
+      nearHospital = simulatedLat > 12.900 && simulatedLat < 12.901;
+
+      // Update last seen time if ambulance is detected
+      if (nearHospital) {
+        lastDetectedTime = Date.now();
+        failureDetected = false;
+      }
+
+      // Update location on UI
+      document.getElementById("location").innerText = `Lat: ${simulatedLat.toFixed(6)}, Lng: ${simulatedLon.toFixed(6)}`;
+
+      // Update traffic light status
+      document.getElementById("greenLight").className = nearHospital ? "light green" : "light";
+      document.getElementById("redLight").className = nearHospital ? "light" : "light red";
+
+      // Check for failure (no detection for 10 seconds)
+      if (Date.now() - lastDetectedTime > 10000) {
+        failureDetected = true;
+        document.getElementById("alertBox").innerText = "⚠️ Ambulance detection failed! Alert sent to traffic control!";
+      } else {
+        document.getElementById("alertBox").innerText = "No alerts";
+      }
+    }
+
+    setInterval(simulateAmbulanceMovement, 3000); // update every 3 seconds
+    simulateAmbulanceMovement(); // initial call
+  </script>
+</body>
+</html>
