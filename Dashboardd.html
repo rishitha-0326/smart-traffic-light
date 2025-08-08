@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Smart Ambulance Traffic Control</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+</head>
+<body>
+  <div class="sidebar">
+    <h2>🚑 Smart Traffic</h2>
+    <ul>
+      <li><a href="#mapSection">Live Location</a></li>
+      <li><a href="#status">Signal Status</a></li>
+      <li><a href="#about">About App</a></li>
+    </ul>
+  </div>
+
+  <div class="main-content">
+    <header>
+      <h1>Smart Ambulance Traffic Control System</h1>
+      <p class="subheading">Live monitoring & emergency management</p>
+    </header>
+
+    <main class="dashboard">
+      <section class="card map-section" id="mapSection">
+        <h2>📍 Live Ambulance Location</h2>
+        <div id="map" class="map-container"></div>
+        <p><strong>Address:</strong> <span id="address">Fetching...</span></p>
+      </section>
+
+      <section class="card status-grid" id="status">
+        <div class="status-box">
+          <h3>🚦 Traffic Light Status</h3>
+          <div class="signal-dots">
+            <span id="redLight" class="light red"></span>
+            <span id="greenLight" class="light green"></span>
+          </div>
+          <p id="signalStatus">Loading...</p>
+        </div>
+
+        <div class="status-box">
+          <h3>🏥 Select Hospital</h3>
+          <select id="hospitalDropdown">
+            <option>City Hospital</option>
+            <option>Apollo Banjara Hills</option>
+            <option>Rainbow Hospital</option>
+            <option>Yashoda Hospital</option>
+          </select>
+          <p id="nearestHospital">Loading...</p>
+        </div>
+
+        <div class="status-box">
+          <h3>📢 Alerts</h3>
+          <p id="alertMsg">Monitoring ambulance...</p>
+        </div>
+      </section>
+
+      <section class="card about-section" id="about">
+        <h2>ℹ️ About the App</h2>
+        <p>
+          This smart traffic control system tracks ambulance location in real-time,
+          updates traffic signals dynamically, and notifies authorities for smooth emergency response.
+        </p>
+      </section>
+    </main>
+
+    <footer>
+      <p>Developed for smarter & safer cities 💡</p>
+    </footer>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyA0ttck-C0CfCG07JlBIBdE6XK5NnL1X74",
+      authDomain: "smarttrafficsystem-ebf4c.firebaseapp.com",
+      databaseURL: "https://smarttrafficsystem-ebf4c.firebaseio.com",
+      projectId: "smarttrafficsystem-ebf4",
+      storageBucket: "smarttrafficsystem-ebf4c.appspot.com",
+      messagingSenderId: "369925982203",
+      appId: "1:369925982203:web:b457ad29c97c8defd46d5e"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const ambulanceRef = ref(db, 'ambulance/');
+
+    const map = L.map('map').setView([17.385044, 78.486671], 14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+    const marker = L.marker([17.385044, 78.486671]).addTo(map);
+
+    function updateMap(lat, lng, address) {
+      marker.setLatLng([lat, lng]);
+      map.setView([lat, lng], 15);
+      document.getElementById('address').innerText = address || 'Unknown';
+    }
+
+    function updateSignal(signal) {
+      document.getElementById('signalStatus').innerText = signal;
+      document.getElementById('redLight').style.opacity = signal === "Red" ? 1 : 0.3;
+      document.getElementById('greenLight').style.opacity = signal === "Green" ? 1 : 0.3;
+    }
+
+    document.getElementById('hospitalDropdown').addEventListener('change', (e) => {
+      document.getElementById('nearestHospital').innerText = e.target.value;
+    });
+
+    onValue(ambulanceRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        updateMap(data.lat, data.lng, data.address);
+        updateSignal(data.signal || "Red");
+        document.getElementById('nearestHospital').innerText = data.hospital || "N/A";
+        document.getElementById('alertMsg').innerText = data.alert || "No alerts";
+      }
+    });
+
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(async (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+
+        const apiKey = "9040be36edf64ac6b7cb794addcffe7d";
+        const response = await fetch(`https://api.opencagedata.com/geocode/v1/json?q=${lat}+${lng}&key=${apiKey}`);
+        const result = await response.json();
+        const address = result.results[0]?.formatted || "Unknown Location";
+
+        await set(ambulanceRef, {
+          lat: lat,
+          lng: lng,
+          address: address,
+          signal: "Green",
+          hospital: document.getElementById('hospitalDropdown').value,
+          alert: "Ambulance is en route"
+        });
+      });
+    }
+  </script>
+</body>
+</html>
